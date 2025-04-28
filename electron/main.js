@@ -1,13 +1,15 @@
-const { app, BrowserWindow, Notification } = require('electron')
+const { app, BrowserWindow, Notification, ipcMain } = require('electron')
 const path = require('path')
 const isDev = process.env.NODE_ENV === 'development'
 
+let win;
 const createWindow = async () => {
-  const win = new BrowserWindow({
+  win = new BrowserWindow({
     show: false,
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false
+      preload: path.join(__dirname, 'preload.js'), // 指定预加载脚本
+      contextIsolation: true, // 保持启用（安全）
+      nodeIntegration: false, // 禁用（安全）
     }
   })
   win.maximize()
@@ -31,7 +33,7 @@ function showNotification () {
   new Notification({ title: NOTIFICATION_TITLE, body: NOTIFICATION_BODY }).show()
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   createWindow()
   showNotification()
 })
@@ -39,3 +41,16 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
 })
+
+ipcMain.on('renderer-to-main', async (event, urls) => {
+  console.log('收到渲染进程的消息:', urls);
+  const { setSendLog, doSpider } = await import('./hello.mjs');
+  setSendLog(sendSpiderLog);
+  for (const url of urls) {
+    doSpider(url);
+  }
+});
+
+function sendSpiderLog(msg) {
+  win.webContents.send('spider-log', msg);
+}
