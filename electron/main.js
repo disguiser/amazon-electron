@@ -42,15 +42,25 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
 })
 
-ipcMain.on('renderer-to-main', async (event, urls) => {
-  console.log('收到渲染进程的消息:', urls);
-  const { setSendLog, doSpider } = await import('./hello.mjs');
+ipcMain.on('do-spider', async (event, { urls, sleepSecond }) => {
+  console.log('get urls from vue:', urls);
+  const { setSendLog, doSpider } = await import('./spider.mjs');
   setSendLog(sendSpiderLog);
-  for (const url of urls) {
-    doSpider(url);
+  try {
+    for (let i = 0; i < urls.length; i++) {
+      sendSpiderLog(`------------- ${urls[i]} -------------`);
+      await doSpider(urls[i]);
+      await sleep(sleepSecond * 1000);
+    }
+  } finally {
+    win.webContents.send('process-done');
   }
 });
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 function sendSpiderLog(msg) {
+  console.log(msg);
   win.webContents.send('spider-log', msg);
 }
