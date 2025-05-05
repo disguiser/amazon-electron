@@ -92,14 +92,9 @@ async function getPuppeteerData(url) {
     // 提取产品标题
     const title = await page.$eval('#productTitle', el => el.textContent.trim());
 
-    // 提取产品描述 (如果存在)
-    const productDescription = await page.$('#productDescription');
-    let description = '';
-    if (productDescription) {
-      description = await productDescription.evaluate(el => el.textContent.trim());
-    }
+    const description = await getDescription(page);
     if (!description || description.length < 20) {
-      description = 'No description!!!!!!';
+      description = title;
     }
 
     const feature = await buildFeature(page);
@@ -155,6 +150,14 @@ async function autoScroll(page) {
 
   // 等待一段时间，确保动态内容加载完成
   await new Promise(resolve => setTimeout(resolve, 2000));
+}
+
+async function getDescription(page) {
+  const aboutThisItem = await page.$('#feature-bullets')
+  if (aboutThisItem) {
+    return await aboutThisItem.$eval('ul', el => el.innerText);
+  }
+  return '';
 }
 
 function rebuildKeyValue(keys, values) {
@@ -263,7 +266,7 @@ async function addInExcel(product) {
   }
   const workSheetsFromFile = xlsx.parse(outputFilePath);
 
-  workSheetsFromFile[1].data.push(product);
+  workSheetsFromFile[0].data.push(product);
 
   const buffer = xlsx.build(workSheetsFromFile);
   await writeFile(outputFilePath, buffer);
