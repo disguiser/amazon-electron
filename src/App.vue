@@ -1,17 +1,13 @@
 <template>
   <div class="app">
-    <main>
+    <n-message-provider>
       <router-view />
-    </main>
+    </n-message-provider>
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue'
-
-export default defineComponent({
-  name: 'App'
-})
+<script lang="ts" setup>
+import { NMessageProvider } from 'naive-ui'
 </script>
 
 <style>
